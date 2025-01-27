@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Venice AI Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    /* General Styles */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-bottom: 2px solid #00ffcc;
+    }
+
+    /* Chatbot Container */
+    .chatbot-container {
+      position: fixed;
+      bottom: 20px;
+      justify-items: center; 
+      align-items: center;
+      right: 20px;
+      width: 100%;
+      height: 500px;
+      background: rgba(30, 30, 47, 0.9);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Chat Header */
+    .chatbot-header {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #00ffcc;
+    }
+
+    /* Chat Messages */
+    .chat-container {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat {
+      max-width: 80%;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .chat.incoming {
+      background: rgba(0, 255, 204, 0.1);
+      align-self: flex-start;
+      border: 1px solid rgba(0, 255, 204, 0.3);
+    }
+
+    .chat.outgoing {
+      background: rgba(0, 255, 204, 0.3);
+      align-self: flex-end;
+      border: 1px solid rgba(0, 255, 204, 0.5);
+    }
+
+    /* Typing Area */
+    .typing-container {
+      display: flex;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      border-top: 1px solid #00ffcc;
+    }
+
+    #chat-input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    #chat-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    #send-btn {
+      background: #00ffcc;
+      color: #1e1e2f;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      margin-left: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #send-btn:hover {
+      background: #00e6b8;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>Venice AI Agent</header>
+
+  <!-- Chatbot Container -->
+  <div class="chatbot-container" id="chatbot-container">
+    <!-- Chat Header -->
+    <!-- Chat Messages -->
+    <div class="chat-container">
+      <div class="chat incoming">Hello! How can I assist you today?</div>
+    </div>
+    <!-- Typing Area -->
+    <div class="typing-container">
+      <input type="text" id="chat-input" placeholder="Type your message..." />
+      <button id="send-btn">
+        <span class="material-icons">send</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const chatContainer = document.querySelector('.chat-container');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Use the CORS proxy URL
+    const API_URL = 'https://cors-anywhere.herokuapp.com/https://api.venice.ai/api/v1/chat/completions';
+    const API_KEY = "L1D2Pe5ThJmfeeCR-ezzM-ktO4DaSht0rj-CKAAkRI";
+
+    function addChatBubble(message, isIncoming = false) {
+      const chatBubble = document.createElement('div');
+      chatBubble.classList.add('chat', isIncoming ? 'incoming' : 'outgoing');
+      chatBubble.innerHTML = `<p>${message}</p>`;
+      chatContainer.appendChild(chatBubble);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function getResponse(prompt) {
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'dolphin-2.9.2-qwen2-72b',
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        });
+        const data = await response.json();
+        return data.choices[0].message.content;
+      } catch (error) {
+        console.error('Error:', error);
+        return 'Error: Unable to fetch response.';
+      }
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      const userPrompt = chatInput.value.trim();
+      if (!userPrompt) return;
+      addChatBubble(userPrompt);
+      chatInput.value = '';
+      const botResponse = await getResponse(userPrompt);
+      addChatBubble(botResponse, true);
+    });
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
